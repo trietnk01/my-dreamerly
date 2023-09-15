@@ -23,6 +23,11 @@ interface IUser {
 	phone: string;
 	avatar: string;
 }
+interface ISocketUser {
+	sender_id: number;
+	receiver_id: number;
+	message: string;
+}
 const ChatFrm = () => {
 	const dispatch = useDispatch();
 	const theme = useTheme();
@@ -30,9 +35,10 @@ const ChatFrm = () => {
 	const { user } = useAuth();
 	const [isConnected, setIsConnected] = React.useState(socket.connected);
 	const [messageData, setMessageData] = React.useState<string[]>([]);
+	const [idReceiver, setIdReceiver] = React.useState<number>(0);
 	const [emailUser, setEmailUser] = React.useState<string>("");
-	const [displayNameUser, setDisplayNameUser] = React.useState<string>("");
-	const [avatarUser, setAvatarUser] = React.useState<string>("");
+	const [displayNameReceiver, setDisplayNameReceiver] = React.useState<string>("");
+	const [avatarReceiver, setAvatarReceiver] = React.useState<string>("");
 	const {
 		register,
 		handleSubmit,
@@ -49,11 +55,12 @@ const ChatFrm = () => {
 		}
 	});
 	const onSubmit: SubmitHandler<IFormInput> = async (dataForm) => {
-		await socket.emit("CLIENT_SEND_MESSAGE", {
-			user_id: user?.id,
-			display_name: user && user.display_name ? user?.display_name : "",
-			content: dataForm.message
-		});
+		const clientParams: ISocketUser = {
+			sender_id: user && user.id ? user.id : 0,
+			receiver_id: idReceiver,
+			message: dataForm.message.toString().trim()
+		};
+		await socket.emit("CLIENT_SEND_MESSAGE", clientParams);
 		setValue("message", "");
 	};
 	React.useEffect(() => {
@@ -73,7 +80,6 @@ const ChatFrm = () => {
 	}, []);
 	React.useEffect(() => {
 		socket.on("SERVER_RETURN_MESSAGE", (data) => {
-			console.log("data = ", data);
 			setMessageData((prevState) => [...prevState, data]);
 		});
 	}, [socket]);
@@ -84,9 +90,10 @@ const ChatFrm = () => {
 			if (status) {
 				const userElmt: IUser = item ? item : null;
 				if (userElmt) {
+					setIdReceiver(userElmt.id);
 					setEmailUser(userElmt.email);
-					setDisplayNameUser(userElmt.display_name);
-					setAvatarUser(userElmt.avatar);
+					setDisplayNameReceiver(userElmt.display_name);
+					setAvatarReceiver(userElmt.avatar);
 				}
 			} else {
 				dispatch(
@@ -180,9 +187,9 @@ const ChatFrm = () => {
 							<MenuRoundedIcon />
 						</IconButton>
 						<Box sx={{ display: "flex", columnGap: "12px" }}>
-							<Avatar src={avatarUser ? `${END_POINT.URL_SERVER}/images/${avatarUser}` : NoAvatar} />
+							<Avatar src={avatarReceiver ? `${END_POINT.URL_SERVER}/images/${avatarReceiver}` : NoAvatar} />
 							<Box>
-								<Box sx={{ fontWeight: 600 }}>{displayNameUser}</Box>
+								<Box sx={{ fontWeight: 600 }}>{displayNameReceiver}</Box>
 								<Box sx={{ color: theme.palette.grey[400], fontSize: "11px" }}>{emailUser}</Box>
 							</Box>
 						</Box>
@@ -241,12 +248,13 @@ const ChatFrm = () => {
 							name="message"
 							defaultValue=""
 							control={control}
+							disabled={idReceiver > 0 ? false : true}
 							render={({ field }) => {
 								return <MyTextField {...field} fullWidth label={t("Type a message")} />;
 							}}
 						/>
 
-						<IconButton color="primary" size="large" type="submit">
+						<IconButton color="primary" size="large" type="submit" disabled={idReceiver > 0 ? false : true}>
 							<SendTwoToneIcon />
 						</IconButton>
 					</Box>

@@ -8,15 +8,18 @@ const chatRouter = io => {
 			const dateNow = new Date();
 			let created_at = getDateString(dateNow);
 			const item = {
-				user_id: data.user_id,
-				content: data.content,
+				sender_id: parseInt(data.sender_id),
+				receiver_id: parseInt(data.receiver_id),
+				message: data.message,
 				created_at
 			};
 			ChatModel.create(item)
 				.then(dataResult => {
-					socket.emit("SERVER_RETURN_MESSAGE", data.content);
+					socket.emit("SERVER_RETURN_MESSAGE", data.message);
 				})
-				.catch(() => {});
+				.catch(err => {
+					console.log("err = ", err);
+				});
 		});
 		socket.on("disconnect", () => {
 			console.log("User disconnected = ", socket.id);

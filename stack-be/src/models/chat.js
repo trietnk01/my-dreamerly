@@ -4,14 +4,19 @@ module.exports = {
 		let colData = [];
 		let questionData = [];
 		let params = [];
-		if (item.user_id) {
-			colData.push("user_id");
-			params.push(item.user_id);
+		if (item.sender_id) {
+			colData.push("sender_id");
+			params.push(item.sender_id);
 			questionData.push("?");
 		}
-		if (item.content) {
-			colData.push("content");
-			params.push(item.content);
+		if (item.receiver_id) {
+			colData.push("receiver_id");
+			params.push(item.receiver_id);
+			questionData.push("?");
+		}
+		if (item.message) {
+			colData.push("message");
+			params.push(item.message);
 			questionData.push("?");
 		}
 		if (item.created_at) {
