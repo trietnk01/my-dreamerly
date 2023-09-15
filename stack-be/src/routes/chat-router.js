@@ -14,7 +14,7 @@ const chatRouter = io => {
 			};
 			ChatModel.create(item)
 				.then(dataResult => {
-					socket.emit("SERVER_SEND_MESSAGE", content);
+					socket.emit("SERVER_RETURN_MESSAGE", data.content);
 				})
 				.catch(() => {});
 		});

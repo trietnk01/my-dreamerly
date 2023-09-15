@@ -73,6 +73,7 @@ const ChatFrm = () => {
 	}, []);
 	React.useEffect(() => {
 		socket.on("SERVER_RETURN_MESSAGE", (data) => {
+			console.log("data = ", data);
 			setMessageData((prevState) => [...prevState, data]);
 		});
 	}, [socket]);
