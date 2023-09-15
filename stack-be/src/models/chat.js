@@ -19,6 +19,9 @@ module.exports = {
 			params.push(item.message);
 			questionData.push("?");
 		}
+		colData.push("seen");
+		params.push(0);
+		questionData.push("?");
 		if (item.created_at) {
 			colData.push("created_at");
 			params.push(item.created_at);

@@ -96,7 +96,7 @@ const MainLayout = () => {
 		setAnchorEl(null);
 	};
 	const handleLogout = () => {
-		logout();
+		logout(user && user.id ? user.id : 0);
 	};
 	const renderMenu = (
 		<Menu

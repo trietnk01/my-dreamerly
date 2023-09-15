@@ -13,6 +13,7 @@ import { DefaultRootStateProps } from "types";
 import Loader from "ui-component/Loader";
 import auth_service from "utils/authService";
 import axios from "utils/axios";
+import useAuth from "hooks/useAuth";
 // constant
 const initialState: InitialLoginContextProps = {
 	isLoggedIn: false,
@@ -152,9 +153,12 @@ const JWTProvider: React.FC<React.PropsWithChildren<JWTProviderProps>> = ({ chil
 		}
 	};
 
-	const logout = () => {
+	const logout = (userId: number) => {
+		const params = {
+			userId
+		};
 		axios
-			.post("/users/logout", { headers: { isShowLoading: true } })
+			.post(`/users/logout`, params, { headers: { isShowLoading: true } })
 			.then((res: any) => {
 				const { status } = res.data;
 				if (status) {

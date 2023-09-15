@@ -28,7 +28,7 @@ export type JWTContextType = {
 	isLoggedIn: boolean;
 	isInitialized?: boolean;
 	user?: UserProfile | null;
-	logout: () => void;
+	logout: (userId: number) => void;
 	login: (email: string, password: string) => void;
 };
 

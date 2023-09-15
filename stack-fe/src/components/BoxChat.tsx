@@ -37,9 +37,9 @@ interface IUser {
 	avatar: string;
 }
 type BoxChatProps = {
-	onSetUserId: (userId: number) => void;
+	onSetReceiverId: (receiverId: number) => void;
 };
-const BoxChat: React.FC<BoxChatProps> = React.memo(({ onSetUserId }) => {
+const BoxChat: React.FC<BoxChatProps> = React.memo(({ onSetReceiverId }) => {
 	const dispatch = useDispatch();
 	const theme = useTheme();
 	const { t } = useTranslation();
@@ -63,8 +63,8 @@ const BoxChat: React.FC<BoxChatProps> = React.memo(({ onSetUserId }) => {
 			mounted = false;
 		};
 	}, []);
-	const handleClick = (userId: number) => () => {
-		onSetUserId(userId);
+	const handleClick = (receiverId: number) => () => {
+		onSetReceiverId(receiverId);
 	};
 	const dataTableLoaded = () => {
 		return (
@@ -74,7 +74,7 @@ const BoxChat: React.FC<BoxChatProps> = React.memo(({ onSetUserId }) => {
 						{userList.map((elmt: IUser, idx: number) => {
 							return (
 								<TableRow hover key={`chat-box-user-item-${idx}`}>
-									<TableCell sx={{ width: "30px" }}>
+									<TableCell sx={{ width: "50px" }}>
 										<Avatar src={elmt.avatar ? END_POINT.URL_SERVER + `/images/` + elmt.avatar : NoAvatar} />
 									</TableCell>
 									<TableCell>
@@ -101,12 +101,14 @@ const BoxChat: React.FC<BoxChatProps> = React.memo(({ onSetUserId }) => {
 	return (
 		<Box
 			sx={{
-				width: "300px",
+				width: "400px",
 				p: "10px",
 				border: "1px solid",
 				borderColor: theme.palette.grey[300],
 				bgcolor: "#FFF",
-				borderRadius: "6px"
+				borderRadius: "6px",
+				height: "900px",
+				overflowX: "hidden"
 			}}
 		>
 			{userList.length > 0 && (

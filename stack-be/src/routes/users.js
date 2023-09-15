@@ -66,8 +66,10 @@ router.post("/check-valid-token", (req, res) => {
 router.post("/logout", async (req, res) => {
 	const valid = await checkAuthorization(req);
 	if (valid) {
-		const sqlUpdatedToken = "update users set remember_token = null";
-		query(sqlUpdatedToken, (errUpdatedToken, dataResult) => {
+		let item = Object.assign({}, req.body);
+		const userId = item.userId;
+		const sqlUpdatedToken = "update users set remember_token = null where id = ?";
+		query(sqlUpdatedToken, [userId], (errUpdatedToken, dataResult) => {
 			if (parseInt(dataResult.affectedRows) > 0) {
 				res.status(200).json({ status: true });
 			}
