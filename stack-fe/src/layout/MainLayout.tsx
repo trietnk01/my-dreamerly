@@ -18,7 +18,7 @@ import { useDispatch, useSelector } from "store";
 import { toggleDrawer } from "store/slices/drawer";
 import { openSnackbar } from "store/slices/snackbar";
 import axios from "utils/axios";
-import { END_POINT } from "configs";
+import { END_POINT, socket } from "configs";
 interface IUser {
 	id: number;
 	display_name: string;
@@ -83,7 +83,7 @@ const MainLayout = () => {
 	const { user } = useAuth();
 	const { isOpenDrawer } = useSelector((state) => state.drawer);
 	const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-
+	const [isConnected, setIsConnected] = React.useState(false);
 	const isMenuOpen = Boolean(anchorEl);
 
 	const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -118,6 +118,37 @@ const MainLayout = () => {
 			<MenuItem onClick={handleLogout}>{t("Logout")}</MenuItem>
 		</Menu>
 	);
+	React.useEffect(() => {
+		const onConnect = () => {
+			setIsConnected(true);
+		};
+		const onDisconnect = () => {
+			setIsConnected(false);
+		};
+		socket.on("connect", onConnect);
+		socket.on("disconnect", onDisconnect);
+		return () => {
+			socket.off("connect", onConnect);
+			socket.off("disconnect", onDisconnect);
+		};
+	}, []);
+	React.useEffect(() => {
+		socket.on("SERVER_RETURN_MAIN_LAYOUT_MESSAGE", (data) => {
+			dispatch(
+				openSnackbar({
+					open: true,
+					message: data,
+					anchorOrigin: { vertical: "bottom", horizontal: "left" },
+					variant: "alert",
+					alert: {
+						color: "success"
+					},
+					transition: "Fade",
+					close: false
+				})
+			);
+		});
+	}, [socket]);
 	return (
 		<Box display="flex">
 			<CssBaseline />

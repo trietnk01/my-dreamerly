@@ -35,7 +35,7 @@ const ChatFrm = () => {
 	const theme = useTheme();
 	const { t } = useTranslation();
 	const { user } = useAuth();
-	const [isConnected, setIsConnected] = React.useState(socket.connected);
+	const [isConnected, setIsConnected] = React.useState(false);
 	const [messageData, setMessageData] = React.useState<string[]>([]);
 	const [idReceiver, setIdReceiver] = React.useState<number>(0);
 	const [emailUser, setEmailUser] = React.useState<string>("");
@@ -69,18 +69,7 @@ const ChatFrm = () => {
 	};
 	React.useEffect(() => {
 		dispatch(toggleDrawer());
-		const onConnect = () => {
-			setIsConnected(true);
-		};
-		const onDisconnect = () => {
-			setIsConnected(false);
-		};
-		socket.on("connect", onConnect);
-		socket.on("disconnect", onDisconnect);
-		return () => {
-			socket.off("connect", onConnect);
-			socket.off("disconnect", onDisconnect);
-		};
+		setIsConnected(socket.connected ? true : false);
 	}, []);
 	React.useEffect(() => {
 		socket.on("SERVER_RETURN_MESSAGE", (data) => {
@@ -99,7 +88,8 @@ const ChatFrm = () => {
 				headers: { isShowLoading: false }
 			});
 			const promise2: any = axios.get(`/chat/list/${senderId}/${receiverId}`);
-			const [res1, res2] = await Promise.all([promise1, promise2]);
+			const promise3: any = axios.put(`/chat/update-status`, { sender_id: senderId, receiver_id: receiverId });
+			const [res1, res2, res3] = await Promise.all([promise1, promise2, promise3]);
 			const { status, item } = res1.data;
 			const { items } = res2.data;
 			if (status) {

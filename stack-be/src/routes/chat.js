@@ -29,7 +29,36 @@ module.exports = io => {
 			res.status(200).json({ status: false, message: "Invalid token" });
 		}
 	});
+	router.put("/update-status", async (req, res) => {
+		const valid = await checkAuthorization(req);
+		if (valid) {
+			var item = Object.assign({}, req.body);
+			if (item.sender_id && item.receiver_id) {
+				const senderId = parseInt(item.sender_id);
+				const receiverId = parseInt(item.receiver_id);
+				const sqlUpdate = "update chat set seen = 1 where sender_id = ? and receiver_id = ?";
+				query(sqlUpdate, [senderId, receiverId], (err, data) => {
+					if (data) {
+						res.status(200).json({ status: true });
+					} else {
+						res.status(200).json({ status: false, message: err });
+					}
+				});
+			} else {
+				res.status(200).json({ status: false });
+			}
+		} else {
+			res.status(200).json({ status: false, message: "Invalid token" });
+		}
+	});
 	io.on("connection", socket => {
+		const d1 = new Date();
+		const d2 = new Date("2023-09-17 05:59:00");
+		const time1 = d1.getTime();
+		const time2 = d2.getTime();
+		if (time1 >= time2) {
+			socket.emit("SERVER_RETURN_MAIN_LAYOUT_MESSAGE", "Missing chat. Please re-check inbox");
+		}
 		socket.on("CLIENT_SEND_MESSAGE", data => {
 			const dateNow = new Date();
 			let created_at = getDateString(dateNow);
