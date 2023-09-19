@@ -1,11 +1,44 @@
 var express = require("express");
 var router = express.Router();
 var _ = require("lodash");
+const { initializeApp } = require("firebase/app");
+const { getDatabase, ref, set } = require("firebase/database");
 const query = require("@helpers/get-mysql-query");
 var ChatModel = require("@models/chat");
 var checkAuthorization = require("@helpers/check-authorization");
 const getDateString = require("@helpers/get-date-string");
+const firebaseConfig = require("@helpers/firebase-config");
 module.exports = io => {
+	router.post("/push/notification", async (req, res) => {
+		const valid = await checkAuthorization(req);
+		if (valid) {
+			const item = Object.assign({}, req.body);
+			if (item.user_id) {
+				const userId = parseInt(item.user_id);
+				const sqlGetList = "select receiver_id , COUNT( seen) as count_seen        from chat   where receiver_id = ? and seen = 0 GROUP by receiver_id";
+				query(sqlGetList, [userId], (errGetList, dataResult) => {
+					if (dataResult) {
+						let countSeen = 0;
+						dataResult.forEach(item => {
+							countSeen += parseInt(item.count_seen);
+						});
+						console.log("countSeen = ", countSeen);
+						console.log("item.count_seen = ", item.count_seen);
+						if (countSeen > 0) {
+							const firebaseApp = initializeApp(firebaseConfig);
+							const database = getDatabase(firebaseApp);
+							set(ref(database, `users/${userId}`), countSeen);
+						}
+						res.status(200).json({ status: true, count_seen: countSeen });
+					} else {
+						res.status(200).json({ status: false });
+					}
+				});
+			}
+		} else {
+			res.status(200).json({ status: false, message: "Invalid token" });
+		}
+	});
 	router.get("/list/:sender_id/:receiver_id", async (req, res) => {
 		const valid = await checkAuthorization(req);
 		if (valid) {
@@ -52,13 +85,6 @@ module.exports = io => {
 		}
 	});
 	io.on("connection", socket => {
-		const d1 = new Date();
-		const d2 = new Date("2023-09-17 05:59:00");
-		const time1 = d1.getTime();
-		const time2 = d2.getTime();
-		if (time1 >= time2) {
-			socket.emit("SERVER_RETURN_MAIN_LAYOUT_MESSAGE", "Missing chat. Please re-check inbox");
-		}
 		socket.on("CLIENT_SEND_MESSAGE", data => {
 			const dateNow = new Date();
 			let created_at = getDateString(dateNow);

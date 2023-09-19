@@ -1,24 +1,25 @@
 import React from "react";
 // material-ui
-import { Avatar, Badge, Box, CssBaseline, Menu, MenuItem } from "@mui/material";
-import { styled } from "@mui/material/styles";
-import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import AccountCircle from "@mui/icons-material/AccountCircle";
 import MailIcon from "@mui/icons-material/Mail";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import { Avatar, Badge, Box, CssBaseline, Menu, MenuItem } from "@mui/material";
+import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
 import IconButton from "@mui/material/IconButton";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import { styled } from "@mui/material/styles";
+import { END_POINT, FIREBASE_CONFIG, socket } from "configs";
+import { initializeApp } from "firebase/app";
+import { getDatabase, onValue, ref } from "firebase/database";
 import useAuth from "hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
-import Sidebar from "./Sidebar";
 import { useDispatch, useSelector } from "store";
 import { toggleDrawer } from "store/slices/drawer";
 import { openSnackbar } from "store/slices/snackbar";
+import Sidebar from "./Sidebar";
 import axios from "utils/axios";
-import { END_POINT, socket } from "configs";
 interface IUser {
 	id: number;
 	display_name: string;
@@ -83,9 +84,7 @@ const MainLayout = () => {
 	const { user } = useAuth();
 	const { isOpenDrawer } = useSelector((state) => state.drawer);
 	const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-	const [isConnected, setIsConnected] = React.useState(false);
 	const isMenuOpen = Boolean(anchorEl);
-
 	const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
 		setAnchorEl(event.currentTarget);
 	};
@@ -119,36 +118,49 @@ const MainLayout = () => {
 		</Menu>
 	);
 	React.useEffect(() => {
-		const onConnect = () => {
-			setIsConnected(true);
-		};
-		const onDisconnect = () => {
-			setIsConnected(false);
-		};
-		socket.on("connect", onConnect);
-		socket.on("disconnect", onDisconnect);
+		socket.on("connect", () => {});
+		socket.on("disconnect", () => {});
 		return () => {
-			socket.off("connect", onConnect);
-			socket.off("disconnect", onDisconnect);
+			socket.off("connect", () => {});
+			socket.off("disconnect", () => {});
 		};
 	}, []);
 	React.useEffect(() => {
-		socket.on("SERVER_RETURN_MAIN_LAYOUT_MESSAGE", (data) => {
-			dispatch(
-				openSnackbar({
-					open: true,
-					message: data,
-					anchorOrigin: { vertical: "bottom", horizontal: "left" },
-					variant: "alert",
-					alert: {
-						color: "success"
-					},
-					transition: "Fade",
-					close: false
-				})
-			);
+		const init = async () => {
+			const userId: number = user && user.id ? user.id : 0;
+			const res: any = await axios.post("/chat/push/notification", { user_id: userId });
+		};
+		init();
+	}, []);
+	React.useEffect(() => {
+		const firebaseApp = initializeApp(FIREBASE_CONFIG);
+		const database = getDatabase(firebaseApp);
+		const starCountRef = ref(database, "users");
+		onValue(starCountRef, (snapshot) => {
+			const data = snapshot.val();
+			let userId: number = user && user.id ? user.id : 0;
+			let countSeen: number = 0;
+			if (data && data[userId]) {
+				console.log("data =  ", data);
+				countSeen = parseInt(data[userId]);
+				if (countSeen > 0) {
+					dispatch(
+						openSnackbar({
+							open: true,
+							message: t(`You missed ${countSeen} message. Please re-check`),
+							anchorOrigin: { vertical: "bottom", horizontal: "left" },
+							variant: "alert",
+							alert: {
+								color: "success"
+							},
+							transition: "Fade",
+							close: false
+						})
+					);
+				}
+			}
 		});
-	}, [socket]);
+	}, []);
 	return (
 		<Box display="flex">
 			<CssBaseline />

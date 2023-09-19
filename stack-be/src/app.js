@@ -16,7 +16,6 @@ var serverHttp = http.createServer(app);
 const io = new Server(serverHttp, {
 	cors: { origin: "*" }
 });
-
 app.use("/", express.static("src/public"));
 app.use(logger("dev"));
 app.use(bodyParser.json());
@@ -26,5 +25,4 @@ app.use(cors());
 var apiRoute = require("@routes/api")(io);
 app.use("/api", apiRoute);
 app.set("port", port);
-
 serverHttp.listen(port);

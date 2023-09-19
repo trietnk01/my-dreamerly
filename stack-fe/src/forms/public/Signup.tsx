@@ -77,6 +77,8 @@ const Signup = () => {
 				if (dataForm.password) {
 					frmData.append("password", dataForm.password);
 				}
+				frmData.append("lang", "vi");
+				frmData.append("currency", "VND");
 				let res: any = await axios.post("/users/create", frmData, {
 					headers: { isShowLoading: true, "content-type": "multipart/form-data" }
 				});

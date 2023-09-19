@@ -35,8 +35,7 @@ const ChatFrm = () => {
 	const theme = useTheme();
 	const { t } = useTranslation();
 	const { user } = useAuth();
-	const [isConnected, setIsConnected] = React.useState(false);
-	const [messageData, setMessageData] = React.useState<string[]>([]);
+	const [isConnected, setIsConnected] = React.useState<boolean>(false);
 	const [idReceiver, setIdReceiver] = React.useState<number>(0);
 	const [emailUser, setEmailUser] = React.useState<string>("");
 	const [displayNameReceiver, setDisplayNameReceiver] = React.useState<string>("");
@@ -72,15 +71,30 @@ const ChatFrm = () => {
 		setIsConnected(socket.connected ? true : false);
 	}, []);
 	React.useEffect(() => {
-		socket.on("SERVER_RETURN_MESSAGE", (data) => {
+		let myTimeout: any = null;
+		socket.on("SERVER_RETURN_MESSAGE", async (data) => {
 			const item: ISocketUser | undefined = data;
-			if (item) {
-				let nextState: ISocketUser[] = [...(chatInfoData && chatInfoData.length > 0 ? chatInfoData : [])];
-				nextState.push(data);
-				setChatInfoData(nextState);
+			if (item && user) {
+				let idUserClicked: number = idReceiver;
+				if (user.id === item.sender_id || idUserClicked === item.sender_id) {
+					let nextState: ISocketUser[] = [...(chatInfoData && chatInfoData.length > 0 ? chatInfoData : [])];
+					nextState.push(data);
+					setChatInfoData(nextState);
+				} else {
+					setChatInfoData([]);
+				}
+				if (idUserClicked === item.sender_id) {
+					const res: any = await axios.put(`/chat/update-status`, {
+						sender_id: item.sender_id,
+						receiver_id: item.receiver_id
+					});
+				}
 			}
 		});
-	}, [socket, chatInfoData]);
+		return () => {
+			clearTimeout(myTimeout);
+		};
+	}, [socket, chatInfoData, user, idReceiver]);
 	const handleClickUser = React.useCallback(async (receiverId: number) => {
 		try {
 			const senderId: number = user && user.id ? user.id : 0;
@@ -88,7 +102,7 @@ const ChatFrm = () => {
 				headers: { isShowLoading: false }
 			});
 			const promise2: any = axios.get(`/chat/list/${senderId}/${receiverId}`);
-			const promise3: any = axios.put(`/chat/update-status`, { sender_id: senderId, receiver_id: receiverId });
+			const promise3: any = axios.put(`/chat/update-status`, { sender_id: receiverId, receiver_id: senderId });
 			const [res1, res2, res3] = await Promise.all([promise1, promise2, promise3]);
 			const { status, item } = res1.data;
 			const { items } = res2.data;
@@ -166,125 +180,127 @@ const ChatFrm = () => {
 			</Card>
 			<Box sx={{ display: "flex", mt: "10px", columnGap: "8px" }}>
 				<BoxChat onSetReceiverId={handleClickUser} />
-				<Box
-					sx={{
-						display: "flex",
-						flexDirection: "column",
-						height: "900px",
-						border: "1px solid",
-						borderColor: theme.palette.grey[300],
-						bgcolor: "#FFF",
-						borderRadius: "6px",
-						p: "8px",
-						flexGrow: 1
-					}}
-				>
+				{idReceiver > 0 && (
 					<Box
 						sx={{
 							display: "flex",
-							alignItems: "center",
-							columnGap: "8px",
-							borderBottom: "1px solid",
+							flexDirection: "column",
+							height: "900px",
+							border: "1px solid",
 							borderColor: theme.palette.grey[300],
-							pb: "8px"
+							bgcolor: "#FFF",
+							borderRadius: "6px",
+							p: "8px",
+							flexGrow: 1
 						}}
 					>
-						<IconButton size="large">
-							<MenuRoundedIcon />
-						</IconButton>
-						<Box sx={{ display: "flex", columnGap: "12px" }}>
-							<Avatar src={avatarReceiver ? `${END_POINT.URL_SERVER}/images/${avatarReceiver}` : NoAvatar} />
-							<Box>
-								<Box sx={{ fontWeight: 600 }}>{displayNameReceiver}</Box>
-								<Box sx={{ color: theme.palette.grey[400], fontSize: "11px" }}>{emailUser}</Box>
+						<Box
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								columnGap: "8px",
+								borderBottom: "1px solid",
+								borderColor: theme.palette.grey[300],
+								pb: "8px"
+							}}
+						>
+							<IconButton size="large">
+								<MenuRoundedIcon />
+							</IconButton>
+							<Box sx={{ display: "flex", columnGap: "12px" }}>
+								<Avatar src={avatarReceiver ? `${END_POINT.URL_SERVER}/images/${avatarReceiver}` : NoAvatar} />
+								<Box>
+									<Box sx={{ fontWeight: 600 }}>{displayNameReceiver}</Box>
+									<Box sx={{ color: theme.palette.grey[400], fontSize: "11px" }}>{emailUser}</Box>
+								</Box>
+							</Box>
+						</Box>
+						<Box sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flexGrow: 1 }}>
+							<Box sx={{ height: "750px", overflowX: "hidden", p: 2 }}>
+								{chatInfoData && chatInfoData.length > 0 && user && (
+									<Box sx={{ display: "flex", flexDirection: "column", rowGap: 2 }}>
+										{chatInfoData.map((chatElmt: ISocketUser, chatIdx: number) => {
+											return (
+												<Box key={`chat-item-${chatIdx}`}>
+													{chatElmt.sender_id === user.id ? (
+														<Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+															<Box
+																sx={{
+																	display: "flex",
+																	flexDirection: "column",
+																	rowGap: "4px",
+																	bgcolor: "#e3f2fd",
+																	p: "12px",
+																	borderRadius: "8px"
+																}}
+															>
+																<Box sx={{ fontSize: "14px", color: theme.palette.grey[800] }}>
+																	{chatElmt.message}
+																</Box>
+																<Box
+																	sx={{
+																		display: "flex",
+																		justifyContent: "flex-end",
+																		fontSize: "11px",
+																		color: theme.palette.grey[500]
+																	}}
+																>
+																	{chatElmt.created_at}
+																</Box>
+															</Box>
+														</Box>
+													) : (
+														<Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+															<Box
+																sx={{
+																	display: "flex",
+																	flexDirection: "column",
+																	rowGap: "4px",
+																	bgcolor: "#ede7f6",
+																	p: "12px",
+																	borderRadius: "8px"
+																}}
+															>
+																<Box sx={{ fontSize: "14px", color: theme.palette.grey[800] }}>
+																	{chatElmt.message}
+																</Box>
+																<Box
+																	sx={{
+																		display: "flex",
+																		justifyContent: "flex-end",
+																		fontSize: "11px",
+																		color: theme.palette.grey[500]
+																	}}
+																>
+																	{chatElmt.created_at}
+																</Box>
+															</Box>
+														</Box>
+													)}
+												</Box>
+											);
+										})}
+									</Box>
+								)}
+							</Box>
+							<Box sx={{ p: "2px", display: "flex", columnGap: "12px", alignItems: "center" }}>
+								<Controller
+									name="message"
+									defaultValue=""
+									control={control}
+									disabled={idReceiver > 0 ? false : true}
+									render={({ field }) => {
+										return <MyTextField {...field} fullWidth label={t("Type a message")} />;
+									}}
+								/>
+
+								<IconButton color="primary" size="large" type="submit" disabled={idReceiver > 0 ? false : true}>
+									<SendTwoToneIcon />
+								</IconButton>
 							</Box>
 						</Box>
 					</Box>
-					<Box sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flexGrow: 1 }}>
-						<Box sx={{ height: "750px", overflowX: "hidden", p: 2 }}>
-							{chatInfoData && chatInfoData.length > 0 && user && (
-								<Box sx={{ display: "flex", flexDirection: "column", rowGap: 2 }}>
-									{chatInfoData.map((chatElmt: ISocketUser, chatIdx: number) => {
-										return (
-											<Box key={`chat-item-${chatIdx}`}>
-												{chatElmt.sender_id === user.id ? (
-													<Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-														<Box
-															sx={{
-																display: "flex",
-																flexDirection: "column",
-																rowGap: "4px",
-																bgcolor: "#e3f2fd",
-																p: "12px",
-																borderRadius: "8px"
-															}}
-														>
-															<Box sx={{ fontSize: "14px", color: theme.palette.grey[800] }}>
-																{chatElmt.message}
-															</Box>
-															<Box
-																sx={{
-																	display: "flex",
-																	justifyContent: "flex-end",
-																	fontSize: "11px",
-																	color: theme.palette.grey[500]
-																}}
-															>
-																{chatElmt.created_at}
-															</Box>
-														</Box>
-													</Box>
-												) : (
-													<Box sx={{ display: "flex", justifyContent: "flex-start" }}>
-														<Box
-															sx={{
-																display: "flex",
-																flexDirection: "column",
-																rowGap: "4px",
-																bgcolor: "#ede7f6",
-																p: "12px",
-																borderRadius: "8px"
-															}}
-														>
-															<Box sx={{ fontSize: "14px", color: theme.palette.grey[800] }}>
-																{chatElmt.message}
-															</Box>
-															<Box
-																sx={{
-																	display: "flex",
-																	justifyContent: "flex-end",
-																	fontSize: "11px",
-																	color: theme.palette.grey[500]
-																}}
-															>
-																{chatElmt.created_at}
-															</Box>
-														</Box>
-													</Box>
-												)}
-											</Box>
-										);
-									})}
-								</Box>
-							)}
-						</Box>
-						<Box sx={{ p: "2px", display: "flex", columnGap: "12px", alignItems: "center" }}>
-							<Controller
-								name="message"
-								defaultValue=""
-								control={control}
-								disabled={idReceiver > 0 ? false : true}
-								render={({ field }) => {
-									return <MyTextField {...field} fullWidth label={t("Type a message")} />;
-								}}
-							/>
-
-							<IconButton color="primary" size="large" type="submit" disabled={idReceiver > 0 ? false : true}>
-								<SendTwoToneIcon />
-							</IconButton>
-						</Box>
-					</Box>
-				</Box>
+				)}
 			</Box>
 		</form>
 	);
