@@ -19,21 +19,44 @@ module.exports = io => {
 				query(sqlGetList, [userId], (errGetList, dataResult) => {
 					if (dataResult) {
 						let countSeen = 0;
-						dataResult.forEach(item => {
-							countSeen += parseInt(item.count_seen);
-						});
+						if (dataResult.length > 0) {
+							dataResult.forEach(item => {
+								countSeen += parseInt(item.count_seen);
+							});
+						}
 						console.log("countSeen = ", countSeen);
 						console.log("item.count_seen = ", item.count_seen);
 						if (countSeen > 0) {
 							const firebaseApp = initializeApp(firebaseConfig);
 							const database = getDatabase(firebaseApp);
-							set(ref(database, `users/${userId}`), countSeen);
+							set(ref(database, `users/${userId}`), { count_seen: countSeen, is_pushed: 0 });
 						}
 						res.status(200).json({ status: true, count_seen: countSeen });
 					} else {
 						res.status(200).json({ status: false });
 					}
 				});
+			}
+		} else {
+			res.status(200).json({ status: false, message: "Invalid token" });
+		}
+	});
+	router.get("/get-date-lastest/:user_id", async (req, res) => {
+		const valid = await checkAuthorization(req);
+		if (valid) {
+			const item = Object.assign({}, req.params);
+			if (item.user_id) {
+				const userId = parseInt(item.user_id);
+				const sqlGetList = "select   id , receiver_id   , created_at       from chat    where receiver_id = ? and seen = 0  order by id DESC  limit 1";
+				query(sqlGetList, [userId], (err, data) => {
+					if (data) {
+						res.status(200).json({ status: true, data });
+					} else {
+						res.status(200).json({ status: false, message: err });
+					}
+				});
+			} else {
+				res.status(200).json({ status: false });
 			}
 		} else {
 			res.status(200).json({ status: false, message: "Invalid token" });

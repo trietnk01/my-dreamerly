@@ -41,6 +41,7 @@ const ChatFrm = () => {
 	const [displayNameReceiver, setDisplayNameReceiver] = React.useState<string>("");
 	const [avatarReceiver, setAvatarReceiver] = React.useState<string>("");
 	const [chatInfoData, setChatInfoData] = React.useState<ISocketUser[]>([]);
+	const chatBoxRef = React.useRef<HTMLDivElement | null>(null);
 	const {
 		register,
 		handleSubmit,
@@ -70,8 +71,19 @@ const ChatFrm = () => {
 		dispatch(toggleDrawer());
 		setIsConnected(socket.connected ? true : false);
 	}, []);
+	var proccess: any = null;
+	var delay: number = 50;
+	var scrollAmount: number = 200;
+	let myTimeout: any = null;
+	const goToBottom = () => {
+		proccess = setInterval(animateScroll, delay);
+	};
+	const animateScroll = () => {
+		if (chatBoxRef && chatBoxRef.current) {
+			chatBoxRef.current.scrollBy(0, scrollAmount);
+		}
+	};
 	React.useEffect(() => {
-		let myTimeout: any = null;
 		socket.on("SERVER_RETURN_MESSAGE", async (data) => {
 			const item: ISocketUser | undefined = data;
 			if (item && user) {
@@ -80,6 +92,7 @@ const ChatFrm = () => {
 					let nextState: ISocketUser[] = [...(chatInfoData && chatInfoData.length > 0 ? chatInfoData : [])];
 					nextState.push(data);
 					setChatInfoData(nextState);
+					goToBottom();
 				} else {
 					setChatInfoData([]);
 				}
@@ -93,8 +106,12 @@ const ChatFrm = () => {
 		});
 		return () => {
 			clearTimeout(myTimeout);
+			clearInterval(proccess);
 		};
 	}, [socket, chatInfoData, user, idReceiver]);
+	React.useEffect(() => {
+		goToBottom();
+	}, [idReceiver]);
 	const handleClickUser = React.useCallback(async (receiverId: number) => {
 		try {
 			const senderId: number = user && user.id ? user.id : 0;
@@ -146,6 +163,7 @@ const ChatFrm = () => {
 			);
 		}
 	}, []);
+
 	return (
 		<form onSubmit={handleSubmit(onSubmit)}>
 			<Card variant="outlined">
@@ -216,7 +234,7 @@ const ChatFrm = () => {
 							</Box>
 						</Box>
 						<Box sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flexGrow: 1 }}>
-							<Box sx={{ height: "750px", overflowX: "hidden", p: 2 }}>
+							<Box sx={{ height: "750px", overflowX: "hidden", p: 2 }} ref={chatBoxRef}>
 								{chatInfoData && chatInfoData.length > 0 && user && (
 									<Box sx={{ display: "flex", flexDirection: "column", rowGap: 2 }}>
 										{chatInfoData.map((chatElmt: ISocketUser, chatIdx: number) => {

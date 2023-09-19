@@ -1,9 +1,7 @@
 import React from "react";
 // material-ui
-import MailIcon from "@mui/icons-material/Mail";
 import MenuIcon from "@mui/icons-material/Menu";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import { Avatar, Badge, Box, CssBaseline, Menu, MenuItem } from "@mui/material";
+import { Avatar, Box, CssBaseline, Menu, MenuItem } from "@mui/material";
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
 import IconButton from "@mui/material/IconButton";
 import Toolbar from "@mui/material/Toolbar";
@@ -11,15 +9,15 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { END_POINT, FIREBASE_CONFIG, socket } from "configs";
 import { initializeApp } from "firebase/app";
-import { getDatabase, onValue, ref } from "firebase/database";
+import { getDatabase, onValue, ref, update, get, child } from "firebase/database";
 import useAuth from "hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { useDispatch, useSelector } from "store";
 import { toggleDrawer } from "store/slices/drawer";
 import { openSnackbar } from "store/slices/snackbar";
-import Sidebar from "./Sidebar";
 import axios from "utils/axios";
+import Sidebar from "./Sidebar";
 interface IUser {
 	id: number;
 	display_name: string;
@@ -82,6 +80,7 @@ const MainLayout = () => {
 	const { logout } = useAuth();
 	const dispatch = useDispatch();
 	const { user } = useAuth();
+	let mounted: boolean = true;
 	const { isOpenDrawer } = useSelector((state) => state.drawer);
 	const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 	const isMenuOpen = Boolean(anchorEl);
@@ -128,22 +127,60 @@ const MainLayout = () => {
 	React.useEffect(() => {
 		const init = async () => {
 			const userId: number = user && user.id ? user.id : 0;
-			const res: any = await axios.post("/chat/push/notification", { user_id: userId });
+			const res1: any = await axios(`/chat/get-date-lastest/${userId}`);
+			if (mounted) {
+				const { status, data } = res1.data;
+				if (status) {
+					if (data && data.length > 0) {
+						const createdAt: string = data[0].created_at;
+						const d1 = new Date(createdAt);
+						const time1 = d1.getTime();
+						const time2 = time1 + 2 * 60 * 1000;
+						const dateNow = new Date();
+						const timeNow = dateNow.getTime();
+						const firebaseApp = initializeApp(FIREBASE_CONFIG);
+						const database = getDatabase(firebaseApp);
+						const dbRef = ref(database);
+						get(child(dbRef, `users`))
+							.then(async (snapshot) => {
+								const data = snapshot.val();
+								console.log("data = ", data);
+								if (!data || !data[userId]) {
+									if (timeNow >= time2) {
+										const res2: any = await axios.post("/chat/push/notification", { user_id: userId });
+									}
+								}
+							})
+							.catch((error) => {
+								console.error(error);
+							});
+					}
+				}
+			}
 		};
 		init();
+		return () => {
+			mounted = false;
+		};
 	}, []);
 	React.useEffect(() => {
+		const userId: number = user && user.id ? user.id : 0;
 		const firebaseApp = initializeApp(FIREBASE_CONFIG);
 		const database = getDatabase(firebaseApp);
-		const starCountRef = ref(database, "users");
+		const starCountRef = ref(database, `users`);
 		onValue(starCountRef, (snapshot) => {
 			const data = snapshot.val();
-			let userId: number = user && user.id ? user.id : 0;
-			let countSeen: number = 0;
 			if (data && data[userId]) {
-				console.log("data =  ", data);
-				countSeen = parseInt(data[userId]);
-				if (countSeen > 0) {
+				const countSeen = parseInt(data[userId].count_seen);
+				const is_pushed = parseInt(data[userId].is_pushed);
+				if (countSeen > 0 && is_pushed === 0) {
+					const updates: any = {};
+					const postData = {
+						count_seen: countSeen,
+						is_pushed: 1
+					};
+					updates[`/users/${userId}`] = postData;
+					update(ref(database), updates);
 					dispatch(
 						openSnackbar({
 							open: true,
@@ -182,16 +219,6 @@ const MainLayout = () => {
 					<Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
 						<Box>{user && user.display_name ? user.display_name : ""}</Box>
 						<Box sx={{ ml: 2 }}>{user && user.email ? user.email : ""}</Box>
-						<IconButton size="large" aria-label="show 4 new mails" color="inherit">
-							<Badge badgeContent={4} color="error">
-								<MailIcon />
-							</Badge>
-						</IconButton>
-						<IconButton size="large" aria-label="show 17 new notifications" color="inherit">
-							<Badge badgeContent={17} color="error">
-								<NotificationsIcon />
-							</Badge>
-						</IconButton>
 						<IconButton
 							size="large"
 							edge="end"

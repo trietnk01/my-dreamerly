@@ -1,9 +1,10 @@
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Box } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { useTheme } from "@mui/styles";
 import useAuth from "hooks/useAuth";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import * as yup from "yup";
 interface IFormInput {
 	email: string;
@@ -12,6 +13,8 @@ interface IFormInput {
 const Login = () => {
 	const { t } = useTranslation();
 	const { login } = useAuth();
+	const navigate = useNavigate();
+	const theme = useTheme();
 	const schema = yup
 		.object({
 			email: yup.string().required(t("Field required").toString()),
@@ -37,6 +40,9 @@ const Login = () => {
 	});
 	const onSubmit: SubmitHandler<IFormInput> = (dataForm) => {
 		login(dataForm.email.toString(), dataForm.password.toString());
+	};
+	const handleBackHomepage = () => {
+		navigate("/");
 	};
 	return (
 		<Box
@@ -154,6 +160,11 @@ const Login = () => {
 						>
 							Login
 						</button>
+					</Box>
+					<Box sx={{ mt: 1 }}>
+						<Button sx={{ color: "#0c00ff" }} onClick={handleBackHomepage} style={{ textDecoration: "none" }}>
+							Homepage
+						</Button>
 					</Box>
 				</form>
 			</Box>
