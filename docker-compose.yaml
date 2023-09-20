@@ -1,6 +1,6 @@
 services:
   nginx:
-    container_name: my-nginx    
+    container_name: nginx_my_dreamerly    
     restart: always
     build:       
       context: ./stack-fe      
@@ -11,7 +11,7 @@ services:
   mysqldb:    
     image: mysql:5.7
     restart: unless-stopped
-    container_name: my-db         
+    container_name: mysqldb_my_dreamerly          
     volumes:
         - my-datavolume:/var/lib/mysql        
     environment:
@@ -24,7 +24,7 @@ services:
   backend:
     depends_on:
       - mysqldb
-    container_name: my-backend
+    container_name: backend_my_dreamerly  
     build: 
       context: ./stack-be
     environment:        
