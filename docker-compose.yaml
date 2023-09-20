@@ -34,4 +34,4 @@ services:
       - 8000:8000
 volumes:
   my-datavolume:
-# docker compose -p hoidanit up -d
+# docker compose -p my-dreamerly up -d
