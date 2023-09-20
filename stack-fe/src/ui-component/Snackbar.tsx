@@ -63,7 +63,7 @@ const Snackbar = () => {
 					TransitionComponent={animation[transition]}
 					anchorOrigin={anchorOrigin}
 					open={open}
-					autoHideDuration={6000}
+					autoHideDuration={20000}
 					onClose={handleClose}
 				>
 					<Box display="flex" alignItems="center" columnGap={1} sx={{ boxShadow: 2, background: "#FFF", p: 1, borderRadius: 2 }}>

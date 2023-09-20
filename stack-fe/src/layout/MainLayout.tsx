@@ -125,7 +125,7 @@ const MainLayout = () => {
 		};
 	}, []);
 	React.useEffect(() => {
-		const init = async () => {
+		const onPushNotification = async () => {
 			const userId: number = user && user.id ? user.id : 0;
 			const res1: any = await axios(`/chat/get-date-lastest/${userId}`);
 			if (mounted) {
@@ -144,7 +144,6 @@ const MainLayout = () => {
 						get(child(dbRef, `users`))
 							.then(async (snapshot) => {
 								const data = snapshot.val();
-								console.log("data = ", data);
 								if (!data || !data[userId]) {
 									if (timeNow >= time2) {
 										const res2: any = await axios.post("/chat/push/notification", { user_id: userId });
@@ -158,45 +157,46 @@ const MainLayout = () => {
 				}
 			}
 		};
-		init();
+		const onCatchUp = () => {
+			const userId: number = user && user.id ? user.id : 0;
+			const firebaseApp = initializeApp(FIREBASE_CONFIG);
+			const database = getDatabase(firebaseApp);
+			const starCountRef = ref(database, `users`);
+			onValue(starCountRef, (snapshot) => {
+				const data = snapshot.val();
+				if (data && data[userId]) {
+					const countSeen = parseInt(data[userId].count_seen);
+					const isPushed = parseInt(data[userId].is_pushed);
+					if (countSeen > 0 && isPushed === 0) {
+						const updates: any = {};
+						const postData = {
+							count_seen: countSeen,
+							is_pushed: 1
+						};
+						updates[`/users/${userId}`] = postData;
+						update(ref(database), updates);
+						dispatch(
+							openSnackbar({
+								open: true,
+								message: t(`You missed ${countSeen} message. Please re-check`),
+								anchorOrigin: { vertical: "bottom", horizontal: "left" },
+								variant: "alert",
+								alert: {
+									color: "success"
+								},
+								transition: "Fade",
+								close: false
+							})
+						);
+					}
+				}
+			});
+		};
+		onPushNotification();
+		onCatchUp();
 		return () => {
 			mounted = false;
 		};
-	}, []);
-	React.useEffect(() => {
-		const userId: number = user && user.id ? user.id : 0;
-		const firebaseApp = initializeApp(FIREBASE_CONFIG);
-		const database = getDatabase(firebaseApp);
-		const starCountRef = ref(database, `users`);
-		onValue(starCountRef, (snapshot) => {
-			const data = snapshot.val();
-			if (data && data[userId]) {
-				const countSeen = parseInt(data[userId].count_seen);
-				const is_pushed = parseInt(data[userId].is_pushed);
-				if (countSeen > 0 && is_pushed === 0) {
-					const updates: any = {};
-					const postData = {
-						count_seen: countSeen,
-						is_pushed: 1
-					};
-					updates[`/users/${userId}`] = postData;
-					update(ref(database), updates);
-					dispatch(
-						openSnackbar({
-							open: true,
-							message: t(`You missed ${countSeen} message. Please re-check`),
-							anchorOrigin: { vertical: "bottom", horizontal: "left" },
-							variant: "alert",
-							alert: {
-								color: "success"
-							},
-							transition: "Fade",
-							close: false
-						})
-					);
-				}
-			}
-		});
 	}, []);
 	return (
 		<Box display="flex">

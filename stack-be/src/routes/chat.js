@@ -24,8 +24,6 @@ module.exports = io => {
 								countSeen += parseInt(item.count_seen);
 							});
 						}
-						console.log("countSeen = ", countSeen);
-						console.log("item.count_seen = ", item.count_seen);
 						if (countSeen > 0) {
 							const firebaseApp = initializeApp(firebaseConfig);
 							const database = getDatabase(firebaseApp);
