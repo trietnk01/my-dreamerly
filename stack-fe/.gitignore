@@ -8,7 +8,6 @@ Thumbs.db
 _ide_helper.php
 error.log
 npm-debug.log
-package-lock.json
 build/*
 build
 yarn.lock
