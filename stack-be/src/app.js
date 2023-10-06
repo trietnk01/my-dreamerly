@@ -8,7 +8,7 @@ var logger = require("morgan");
 var bodyParser = require("body-parser");
 require("module-alias/register");
 const { Server } = require("socket.io");
-var port = process.env.NODE_ENV === "development" ? process.env.PORT : 7000;
+var port = process.env.NODE_ENV === "development" ? process.env.PORT_DEV : process.env.PORT_PRODUCTION;
 global.__IMAGES = path.join(__dirname, "public/images");
 global.__DOCUMENTS = path.join(__dirname, "public/documents");
 var app = express();
