@@ -9,7 +9,7 @@ services:
     build:       
       context: ./stack-fe 
     ports:
-      - 3000:80 
+      - 9821:80 
     networks:
       - bridge   
     volumes:
@@ -22,11 +22,11 @@ services:
       MYSQL_ROOT_PASSWORD: dreamerly246
       MYSQL_DATABASE: my_dreamerly         
     volumes:
-        - my-datavolume:/var/lib/mysql        
+        - my_data:/var/lib/mysql        
     networks:
       - bridge   
     ports:
-      - 3307:3306        
+      - 4561:3306        
   backend:
     depends_on:
       - mysqldb
@@ -34,12 +34,9 @@ services:
     build: 
       context: ./stack-be
     ports:
-      - 7000:8000    
+      - 7201:8000    
     networks:
-      - bridge   
-    environment:        
-      - DATABASE_PORT:3307   
-      - HOST:host.docker.internal    
+      - bridge       
 volumes:
-  my-datavolume:
+  my_data:
 # docker compose -p my-dreamerly up -d
