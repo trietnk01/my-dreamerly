@@ -17,7 +17,7 @@ module.exports = io => {
 				const userId = parseInt(item.user_id);
 				const sqlGetList = "select receiver_id , COUNT( seen) as count_seen        from chat   where receiver_id = ? and seen = 0 GROUP by receiver_id";
 				query(sqlGetList, [userId], (errGetList, dataResult) => {
-					if (dataResult) {
+					if (dataResult) {						
 						let countSeen = 0;
 						if (dataResult.length > 0) {
 							dataResult.forEach(item => {
