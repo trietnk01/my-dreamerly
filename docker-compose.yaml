@@ -30,11 +30,16 @@ services:
   backend:
     depends_on:
       - mysqldb
+    restart: unless-stopped
     container_name: backend_my_dreamerly  
     build: 
       context: ./stack-be
-    ports:
-      - 7201:8000    
+    environment:
+      - HOST=mysqldb
+    links:
+      -mysqldb
+    expose:
+      - "8000"
     networks:
       - bridge       
 volumes:
